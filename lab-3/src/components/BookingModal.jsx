@@ -6,6 +6,12 @@ export default function BookingModal({ car, isOpen, onClose }) {
     const [totalPrice, setTotalPrice] = useState(0);
     const [daysCount, setDaysCount] = useState(0);
 
+    const [showPayment, setShowPayment] = useState(false);
+    const [cardName, setCardName] = useState('');
+    const [cardNumber, setCardNumber] = useState('');
+    const [cardDate, setCardDate] = useState('');
+    const [cardCvv, setCardCvv] = useState('');
+
     useEffect(() => {
         if (startDate && endDate && car) {
             const start = new Date(startDate);
@@ -26,30 +32,64 @@ export default function BookingModal({ car, isOpen, onClose }) {
         }
     }, [startDate, endDate, car]);
 
-    const handleConfirm = () => {
+    useEffect(() => {
+        if (!isOpen) {
+            setShowPayment(false);
+            setStartDate('');
+            setEndDate('');
+            setCardName('');
+            setCardNumber('');
+            setCardDate('');
+            setCardCvv('');
+        }
+    }, [isOpen]);
+
+    const handleConfirmDates = () => {
         if (totalPrice > 0) {
-            const newBooking = {
-                id: Date.now(),
-                carBrand: car.brand,
-                carModel: car.model,
-                carImage: car.image,
-                startDate: startDate,
-                endDate: endDate,
-                totalPrice: totalPrice,
-                date: new Date().toLocaleDateString()
-            };
-
-            const existingBookings = JSON.parse(localStorage.getItem('myBookings')) || [];
-
-            const updatedBookings = [...existingBookings, newBooking];
-
-            localStorage.setItem('myBookings', JSON.stringify(updatedBookings));
-
-            alert(`Успішно! Ви забронювали ${car.brand} ${car.model}. Перевірте Кабінет.`);
-            onClose();
+            setShowPayment(true);
         } else {
             alert("Будь ласка, виберіть коректні дати");
         }
+    };
+
+    const handleCardNumberChange = (e) => {
+        let value = e.target.value.replace(/\D/g, "");
+        value = value.replace(/(.{4})/g, "$1 ").trim();
+        setCardNumber(value.substring(0, 19));
+    };
+
+    const handleCardDateChange = (e) => {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 2) {
+            value = value.substring(0, 2) + "/" + value.substring(2, 4);
+        }
+        setCardDate(value.substring(0, 5));
+    };
+
+    const processPayment = () => {
+        if (!cardName || !cardNumber || !cardDate || !cardCvv) {
+            alert("Будь ласка, заповніть всі дані картки!");
+            return;
+        }
+
+        const newBooking = {
+            id: Date.now(),
+            carBrand: car.brand,
+            carModel: car.model,
+            carImage: car.image,
+            startDate: startDate,
+            endDate: endDate,
+            totalPrice: totalPrice,
+            date: new Date().toLocaleDateString(),
+            status: "Оплачено"
+        };
+
+        const existingBookings = JSON.parse(localStorage.getItem('myBookings')) || [];
+        const updatedBookings = [...existingBookings, newBooking];
+        localStorage.setItem('myBookings', JSON.stringify(updatedBookings));
+
+        alert(`Успішно оплачено! Ви забронювали ${car.brand} ${car.model}. Перевірте Кабінет.`);
+        onClose();
     };
 
     if (!isOpen || !car) return null;
@@ -67,6 +107,7 @@ export default function BookingModal({ car, isOpen, onClose }) {
                             type="date"
                             value={startDate}
                             onChange={e => setStartDate(e.target.value)}
+                            disabled={showPayment}
                         />
                     </label>
                     <label>
@@ -75,6 +116,7 @@ export default function BookingModal({ car, isOpen, onClose }) {
                             type="date"
                             value={endDate}
                             onChange={e => setEndDate(e.target.value)}
+                            disabled={showPayment}
                         />
                     </label>
                 </div>
@@ -86,9 +128,54 @@ export default function BookingModal({ car, isOpen, onClose }) {
                     <h3>Всього до сплати: <span style={{color: '#FCA311'}}>{totalPrice} грн</span></h3>
                 </div>
 
-                <button className="btn-rent" onClick={handleConfirm}>
-                    Підтвердити бронювання
-                </button>
+                {!showPayment ? (
+                    <button className="btn-rent" onClick={handleConfirmDates}>
+                        Підтвердити бронювання
+                    </button>
+                ) : (
+                    <div className="payment-section" style={{ marginTop: '20px', borderTop: '1px solid #ccc', paddingTop: '15px' }}>
+                        <h3 style={{ marginBottom: '15px' }}>Оплата картою</h3>
+                        
+                        <input 
+                            type="text" 
+                            placeholder="Ім'я на карті (Ivan Ivanov)" 
+                            value={cardName} 
+                            onChange={(e) => setCardName(e.target.value)}
+                            style={{ width: '100%', marginBottom: '10px', padding: '8px', boxSizing: 'border-box' }}
+                        />
+                        <input 
+                            type="text" 
+                            placeholder="Номер карти (0000 0000 0000 0000)" 
+                            value={cardNumber} 
+                            onChange={handleCardNumberChange}
+                            style={{ width: '100%', marginBottom: '10px', padding: '8px', boxSizing: 'border-box' }}
+                        />
+                        
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                            <input 
+                                type="text" 
+                                placeholder="ММ/РР" 
+                                value={cardDate} 
+                                onChange={handleCardDateChange}
+                                style={{ width: '50%', padding: '8px', boxSizing: 'border-box' }}
+                            />
+                            <input 
+                                type="password" 
+                                placeholder="CVV" 
+                                value={cardCvv} 
+                                onChange={(e) => setCardCvv(e.target.value)}
+                                style={{ width: '50%', padding: '8px', boxSizing: 'border-box' }}
+                            />
+                        </div>
+                        
+                        <button 
+                            onClick={processPayment} 
+                            style={{ background: '#FCA311', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
+                        >
+                            Оплатити
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
