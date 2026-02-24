@@ -82,6 +82,45 @@ function confirmBooking() {
         return;
     }
 
+    document.getElementById("payment-section").classList.remove("hidden");
+}
+
+function processPayment() {
+    const cardName = document.getElementById("card-name").value;
+    const cardNumber = document.getElementById("card-number").value;
+
+    if (cardName === "" || cardNumber === "") {
+        alert("Будь ласка, введіть дані картки!");
+        return;
+    }
+
+    const total = document.getElementById("modalTotalPrice").innerText;
+
+    const bookingHTML = `
+        <div class="booking-item">
+            <h4>${selectedCar.brand} ${selectedCar.model}</h4>
+            <p>Період: ${startDateInput.value} - ${endDateInput.value}</p>
+            <p class="status confirmed" style="color: green;">Статус: Оплачено</p>
+            <p class="price">Всього до сплати: ${total} грн</p>
+            <button class="btn-cancel" onclick="deleteBooking(this)">Скасувати бронювання</button>
+        </div>
+    `;
+
+    bookingGrid.insertAdjacentHTML('afterbegin', bookingHTML);
+
+    alert("Успішно оплачено та забронювано!");
+
+    closeModal();
+
+    document.getElementById("payment-section").classList.add("hidden");
+    document.getElementById("card-name").value = "";
+    document.getElementById("card-number").value = "";
+    document.getElementById("card-date").value = "";
+    document.getElementById("card-cvv").value = "";
+
+    document.getElementById('bookings').scrollIntoView({ behavior: 'smooth' });
+}
+
     const bookingHTML = `
         <div class="booking-item">
             <h4>${selectedCar.brand} ${selectedCar.model}</h4>
@@ -95,8 +134,8 @@ function confirmBooking() {
     bookingGrid.insertAdjacentHTML('afterbegin', bookingHTML);
     closeModal();
     alert("Успішно заброньовано!");
-    document.getElementById('bookings').scrollIntoView({behavior: 'smooth'});
-}
+    document.getElementById('bookings').scrollIntoView({behavior: 'smooth'})
+
 
 function deleteBooking(button) {
     if (confirm("Ви точно хочете скасувати це бронювання?")) {

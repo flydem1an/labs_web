@@ -102,6 +102,20 @@
         </div>
 
         <button class="btn-rent" onclick="confirmBooking()">Підтвердити бронювання</button>
+
+        <div id="payment-section" class="payment-section hidden">
+            <h3 class="payment-title">Оплата картою</h3>
+
+            <input type="text" id="card-name" class="payment-input" placeholder="Ім'я на карті (Ivan Ivanov)">
+            <input type="text" id="card-number" class="payment-input" placeholder="Номер карти (0000 0000 0000 0000)">
+
+            <div class="payment-row">
+                <input type="text" id="card-date" class="payment-input half" placeholder="ММ/РР">
+                <input type="password" id="card-cvv" class="payment-input half" placeholder="CVV">
+            </div>
+
+            <button id="final-pay-btn" class="payment-btn" onclick="processPayment()">Оплатити</button>
+        </div>
     </div>
 </div>
 
