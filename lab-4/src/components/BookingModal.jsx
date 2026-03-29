@@ -78,30 +78,40 @@ export default function BookingModal({ car, isOpen, onClose }) {
         setCardDate(value.substring(0, 5));
     };
 
-    const processPayment = () => {
+    const processPayment = async () => {
         if (!cardName || !cardNumber || !cardDate || !cardCvv) {
             alert("Будь ласка, заповніть всі дані картки!");
             return;
         }
 
-        const newBooking = {
-            id: Date.now(),
-            carBrand: car.brand,
-            carModel: car.model,
-            carImage: car.image,
-            startDate: startDate,
-            endDate: endDate,
-            totalPrice: totalPrice,
-            date: new Date().toLocaleDateString(),
-            status: "Оплачено"
-        };
+        try {
+            const response = await fetch('http://localhost:5000/api/bookings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    carId: car.id,
+                    carName: `${car.brand} ${car.model}`,
+                    userEmail: user.email,
+                    startDate: startDate,
+                    endDate: endDate,
+                    totalPrice: totalPrice 
+                })
+            });
 
-        const existingBookings = JSON.parse(localStorage.getItem('myBookings')) || [];
-        const updatedBookings = [...existingBookings, newBooking];
-        localStorage.setItem('myBookings', JSON.stringify(updatedBookings));
+            const result = await response.json();
 
-        alert(`Успішно оплачено! Ви забронювали ${car.brand} ${car.model}. Перевірте Кабінет.`);
-        onClose();
+            if (response.ok) {
+                alert(`Успішно оплачено! ${result.message}`);
+                onClose();
+            } else {
+                alert(`Помилка: ${result.message}`);
+            }
+        } catch (error) {
+            console.error("Помилка відправки:", error);
+            alert("Помилка з'єднання з сервером.");
+        }
     };
 
     if (!isOpen || !car) return null;

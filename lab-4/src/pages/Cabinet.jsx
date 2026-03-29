@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../firebase';
 
 export default function Cabinet() {
     const [bookings, setBookings] = useState([]);
 
     useEffect(() => {
-        const savedBookings = JSON.parse(localStorage.getItem('myBookings')) || [];
-        setBookings(savedBookings);
+        const fetchBookings = async (email) => {
+            try {
+                const response = await fetch(`http://localhost:5000/api/bookings?email=${email}`);
+                const data = await response.json();
+                setBookings(data);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                fetchBookings(user.email);
+            } else {
+                setBookings([]);
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
 
     const cancelBooking = (id) => {
         if (window.confirm("Ви впевнені, що хочете скасувати це бронювання?")) {
-            const updatedBookings = bookings.filter(booking => booking.id !== id);
-
-            setBookings(updatedBookings);
-            localStorage.setItem('myBookings', JSON.stringify(updatedBookings));
+            setBookings(bookings.filter(booking => booking.id !== id));
         }
     };
 
@@ -21,7 +36,6 @@ export default function Cabinet() {
         <div className="container">
             <section>
                 <h2>Мій кабінет</h2>
-
                 {bookings.length === 0 ? (
                     <p>У вас поки немає активних бронювань. Перейдіть у каталог, щоб обрати авто.</p>
                 ) : (
@@ -29,9 +43,9 @@ export default function Cabinet() {
                         {bookings.map((item) => (
                             <div key={item.id} className="booking-item">
                                 <div className="booking-info">
-                                    <h3>{item.carBrand} {item.carModel}</h3>
+                                    <h3>{item.carName || `${item.carBrand} ${item.carModel}`}</h3>
                                     <p>{item.startDate} — {item.endDate}</p>
-                                    <p><span className="price">{item.totalPrice} грн</span></p>
+                                    {item.totalPrice && <p><span className="price">{item.totalPrice} грн</span></p>}
                                 </div>
                                 <button
                                     className="btn-cancel"
