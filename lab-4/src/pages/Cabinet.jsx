@@ -26,9 +26,23 @@ export default function Cabinet() {
         return () => unsubscribe();
     }, []);
 
-    const cancelBooking = (id) => {
+    const cancelBooking = async (id) => {
         if (window.confirm("Ви впевнені, що хочете скасувати це бронювання?")) {
-            setBookings(bookings.filter(booking => booking.id !== id));
+            try {
+                const response = await fetch(`/api/bookings/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    setBookings(bookings.filter(booking => booking.id !== id));
+                    alert("Бронювання успішно скасовано!");
+                } else {
+                    alert("Помилка при видаленні на сервері");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Не вдалося зв'язатися з сервером");
+            }
         }
     };
 

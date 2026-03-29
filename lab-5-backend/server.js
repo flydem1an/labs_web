@@ -21,18 +21,15 @@ app.use(express.static(path.join(__dirname, "dist")));
 app.get("/api/bookings", async (req, res) => {
     try {
         const userEmail = req.query.email;
-
         if (!userEmail) {
             return res.status(400).json({ message: "Email обов'язковий" });
         }
 
         const snapshot = await db.collection("bookings").where("userEmail", "==", userEmail).get();
         const bookings = [];
-
         snapshot.forEach(doc => {
             bookings.push({ id: doc.id, ...doc.data() });
         });
-
         res.json(bookings);
     } catch (error) {
         console.error(error);
@@ -42,7 +39,7 @@ app.get("/api/bookings", async (req, res) => {
 
 app.post("/api/bookings", async (req, res) => {
     try {
-        const { carId, userEmail, startDate, endDate, carName } = req.body;
+        const { carId, userEmail, startDate, endDate, carName, totalPrice } = req.body;
 
         const carRef = db.collection("cars").doc(String(carId));
         const carDoc = await carRef.get();
@@ -52,7 +49,6 @@ app.post("/api/bookings", async (req, res) => {
         }
 
         const carData = carDoc.data();
-
         if (carData.availableCount <= 0) {
             return res.status(400).json({ message: "На жаль, це авто зараз недоступне" });
         }
@@ -67,13 +63,12 @@ app.post("/api/bookings", async (req, res) => {
             userEmail,
             startDate,
             endDate,
-            totalPrice: req.body.totalPrice,
+            totalPrice,
             status: "Підтверджено",
             createdAt: new Date().toISOString()
         };
 
         const bookingRef = await db.collection("bookings").add(newBooking);
-
         res.status(201).json({ message: "Бронювання успішно оформлено!", bookingId: bookingRef.id });
 
     } catch (error) {
@@ -82,6 +77,41 @@ app.post("/api/bookings", async (req, res) => {
     }
 });
 
-app.listen(5000, () => {
-    console.log("Server is running on port 5000");
+app.delete("/api/bookings/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const bookingRef = db.collection("bookings").doc(id);
+        const bookingDoc = await bookingRef.get();
+
+        if (!bookingDoc.exists) {
+            return res.status(404).json({ message: "Бронювання не знайдено" });
+        }
+
+        const bookingData = bookingDoc.data();
+
+        const carRef = db.collection("cars").doc(String(bookingData.carId));
+        const carDoc = await carRef.get();
+        if (carDoc.exists) {
+            await carRef.update({
+                availableCount: carDoc.data().availableCount + 1
+            });
+        }
+
+        await bookingRef.delete();
+        
+        res.json({ message: "Бронювання успішно скасовано" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Помилка при видаленні бронювання" });
+    }
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
