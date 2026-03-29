@@ -7,7 +7,7 @@ export default function Cabinet() {
     useEffect(() => {
         const fetchBookings = async (email) => {
             try {
-                const response = await fetch('/api/bookings?email=${email}');;
+                const response = await fetch(`/api/bookings?email=${email}`);
                 const data = await response.json();
                 setBookings(data);
             } catch (error) {
